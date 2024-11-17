@@ -1,6 +1,7 @@
 using Photon.Pun;
 using Photon.Realtime;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -13,25 +14,21 @@ public class Launcher : MonoBehaviourPunCallbacks
     [SerializeField] TMP_Text errorText;
     [SerializeField] TMP_Text roomNameText;
     [SerializeField] Transform roomListContent;
+    [SerializeField] Transform playerListContent;
     [SerializeField] GameObject roomListItemPrefab;
+    [SerializeField] GameObject playerListItemPrefab;
+    [SerializeField] GameObject startGameButton;
 
-    private const string loadingMenu = "loading";
-    private const string titleMenu = "title";
-    private const string roomMenu = "room";
-    private const string errorMenu = "error";
+    private const string LOADING_MENU = "loading";
+    private const string TITLE_MENU = "title";
+    private const string ROOM_MENU = "room";
+    private const string ERROR_MENU = "error";
+    private const string FIND_ROOM_MENU = "find room";
 
 
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        Instance = this;
     }
 
 
@@ -57,6 +54,7 @@ public class Launcher : MonoBehaviourPunCallbacks
     {
         Debug.Log("Connected to Master");
         PhotonNetwork.JoinLobby();
+        PhotonNetwork.AutomaticallySyncScene = true;
     }
 
     /// <summary>
@@ -65,8 +63,9 @@ public class Launcher : MonoBehaviourPunCallbacks
     /// </summary>
     public override void OnJoinedLobby()
     {
-        OpenMenu(titleMenu);
+        OpenMenu(TITLE_MENU);
         Debug.Log("Joined lobby");
+        PhotonNetwork.NickName = "Player " + Random.Range(0, 1000).ToString("0000");
     }
 
     /// <summary>
@@ -78,7 +77,7 @@ public class Launcher : MonoBehaviourPunCallbacks
         if (IsRoomNameValid())
         {
             PhotonNetwork.CreateRoom(roomNameInputField.text); // Create a new Photon room with the specified name
-            OpenMenu(loadingMenu); // Show loading menu
+            OpenMenu(LOADING_MENU); // Show loading menu
         }
     }
 
@@ -93,8 +92,27 @@ public class Launcher : MonoBehaviourPunCallbacks
     /// </summary>
     public override void OnJoinedRoom()
     {
-        OpenMenu(roomMenu);
+        OpenMenu(ROOM_MENU);
         DisplayRoomName();
+
+        Player[] players = PhotonNetwork.PlayerList;
+
+        foreach (Transform child in playerListContent)
+        {
+            Destroy(child.gameObject);
+        }
+
+        for (int i = 0; i < players.Count(); i++)
+        {
+            Instantiate(playerListItemPrefab, playerListContent).GetComponent<PlayerListItem>().SetUp(players[i]);
+        }
+
+        startGameButton.SetActive(PhotonNetwork.IsMasterClient);
+    }
+
+    public override void OnMasterClientSwitched(Player newMasterClient)
+    {
+        startGameButton.SetActive(PhotonNetwork.IsMasterClient);
     }
 
     private void DisplayRoomName()
@@ -114,7 +132,12 @@ public class Launcher : MonoBehaviourPunCallbacks
     private void ShowErrorMessage(string message)
     {
         errorText.text = "Room Creation Failed: " + message;
-        OpenMenu(errorMenu);
+        OpenMenu(ERROR_MENU);
+    }
+
+    public void StartGame()
+    {
+        PhotonNetwork.LoadLevel(1);
     }
 
     /// <summary>
@@ -123,13 +146,13 @@ public class Launcher : MonoBehaviourPunCallbacks
     public void LeaveRoom()
     {
         PhotonNetwork.LeaveRoom();
-        OpenMenu(loadingMenu);
+        OpenMenu(LOADING_MENU);
     }
 
     public void JoinRoom(RoomInfo roomInfo)
     {
         PhotonNetwork.JoinRoom(roomInfo.Name);
-        OpenMenu(loadingMenu);
+        OpenMenu(LOADING_MENU);
     }
 
     /// <summary>
@@ -138,7 +161,7 @@ public class Launcher : MonoBehaviourPunCallbacks
     /// </summary>
     public override void OnLeftRoom()
     {
-        OpenMenu(titleMenu);
+        OpenMenu(TITLE_MENU);
     }
 
     public override void OnRoomListUpdate(List<RoomInfo> roomList)
@@ -150,12 +173,24 @@ public class Launcher : MonoBehaviourPunCallbacks
 
         for (int i = 0; i < roomList.Count; i++)
         {
-            Instantiate(roomListItemPrefab, roomListContent).GetComponent<Room_List_Item>().SetUp(roomList[i]);
+            if (roomList[i].RemovedFromList)
+            {
+                continue;
+            }
+            Instantiate(roomListItemPrefab, roomListContent).GetComponent<RoomListItem>().SetUp(roomList[i]);
         }
+    }
+
+    public override void OnPlayerEnteredRoom(Player newPlayer)
+    {
+        Instantiate(playerListItemPrefab, playerListContent).GetComponent<PlayerListItem>().SetUp(newPlayer);
     }
 
     private void OpenMenu(string menuName)
     {
         Menu_Manager.Instance.OpenMenu(menuName); // Open specified menu
     }
+
 }
+
+

@@ -2,11 +2,11 @@ using Photon.Realtime;
 using TMPro;
 using UnityEngine;
 
-public class Room_List_Item : MonoBehaviour
+public class RoomListItem : MonoBehaviour
 {
     [SerializeField] TMP_Text infoText;
 
-    RoomInfo info;
+    public RoomInfo info;
 
     public void SetUp(RoomInfo _info)
     {
