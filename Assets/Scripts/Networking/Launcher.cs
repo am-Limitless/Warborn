@@ -42,7 +42,6 @@ public class Launcher : MonoBehaviourPunCallbacks
 
     private void ConnectToMasterServer()
     {
-        Debug.Log("Connecting to Master");
         PhotonNetwork.ConnectUsingSettings();
     }
 
@@ -52,7 +51,6 @@ public class Launcher : MonoBehaviourPunCallbacks
     /// </summary>
     public override void OnConnectedToMaster()
     {
-        Debug.Log("Connected to Master");
         PhotonNetwork.JoinLobby();
         PhotonNetwork.AutomaticallySyncScene = true;
     }
@@ -64,7 +62,6 @@ public class Launcher : MonoBehaviourPunCallbacks
     public override void OnJoinedLobby()
     {
         OpenMenu(TITLE_MENU);
-        Debug.Log("Joined lobby");
         PhotonNetwork.NickName = "Player " + Random.Range(0, 1000).ToString("0000");
     }
 
@@ -191,6 +188,10 @@ public class Launcher : MonoBehaviourPunCallbacks
         Menu_Manager.Instance.OpenMenu(menuName); // Open specified menu
     }
 
+    public void QuitGame()
+    {
+        Application.Quit();
+    }
 }
 
 
