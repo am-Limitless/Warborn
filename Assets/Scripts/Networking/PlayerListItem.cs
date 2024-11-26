@@ -5,8 +5,12 @@ using UnityEngine;
 
 public class PlayerListItem : MonoBehaviourPunCallbacks
 {
+    #region Fields and References
+
     [SerializeField] TMP_Text text;
     Player player;
+
+    #endregion
 
     public void SetUp(Player _player)
     {
