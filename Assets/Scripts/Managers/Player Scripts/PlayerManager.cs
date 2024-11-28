@@ -4,11 +4,15 @@ using UnityEngine;
 
 public class PlayerManager : MonoBehaviour
 {
-    PhotonView PV;
+    #region Variables
 
-    // Define a range for the random spawn positions
-    [SerializeField] private Vector3 spawnRangeMin = new Vector3(-10, 0, -10);
-    [SerializeField] private Vector3 spawnRangeMax = new Vector3(10, 0, 10);
+    private PhotonView PV;
+
+    GameObject controller;
+
+    #endregion
+
+    #region Unity Methods
 
     private void Awake()
     {
@@ -23,14 +27,22 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region Player Management
+
     private void CreateController()
     {
-        Vector3 randomPosition = new Vector3(
-            Random.Range(spawnRangeMin.x, spawnRangeMax.x),
-            Random.Range(spawnRangeMin.y, spawnRangeMax.y),
-            Random.Range(spawnRangeMin.z, spawnRangeMax.z)
-        );
+        Transform spawnpoint = SpawnManager.Instance.GetSpawnpoint();
 
-        PhotonNetwork.Instantiate(Path.Combine("PhotonPrefabs", "PlayerController"), randomPosition, Quaternion.identity);
+        controller = PhotonNetwork.Instantiate(Path.Combine("PhotonPrefabs", "PlayerController"), spawnpoint.position, spawnpoint.rotation, 0, new object[] { PV.ViewID });
     }
+
+    public void Die()
+    {
+        PhotonNetwork.Destroy(controller);
+        CreateController();
+    }
+
+    #endregion
 }

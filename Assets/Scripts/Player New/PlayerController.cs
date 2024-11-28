@@ -1,7 +1,10 @@
+using Cinemachine;
 using Photon.Pun;
+using Photon.Realtime;
 using UnityEngine;
+using Hashtable = ExitGames.Client.Photon.Hashtable;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
 {
     #region Variables
 
@@ -12,9 +15,17 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float jumpForce;
     [SerializeField] private float movementSmoothingTime;
 
-
     [Header("Camera Settings")]
     [SerializeField] GameObject cameraHolder;
+    public Transform player;
+    public Transform gun;
+    private Transform cameraTransform;
+    public float rotationSpeed = 3f;
+
+    [Header("Items Reference")]
+    [SerializeField] Item[] items;
+    private int itemIndex;
+    private int previousItemIndex = -1;
 
     private float verticalLookRotation;
     private bool isGrounded;
@@ -22,7 +33,12 @@ public class PlayerController : MonoBehaviour
     private Vector3 movementAmount;
 
     private Rigidbody rb;
-    private PhotonView photonView;
+    private new PhotonView photonView;
+
+    const float maxHealth = 100f;
+    float currentHealth = maxHealth;
+
+    PlayerManager playerManager;
 
     #endregion
 
@@ -32,11 +48,27 @@ public class PlayerController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         photonView = GetComponent<PhotonView>();
+
+        playerManager = PhotonView.Find((int)photonView.InstantiationData[0]).GetComponent<PlayerManager>();
     }
 
     private void Start()
     {
         HandlePhotonView();
+
+        // Assign cameraTransform only if this is the local player
+        if (photonView.IsMine && cameraHolder != null)
+        {
+            // Find the Cinemachine camera under this player's cameraHolder
+            CinemachineVirtualCamera virtualCamera = cameraHolder.GetComponentInChildren<CinemachineVirtualCamera>();
+            if (virtualCamera != null)
+            {
+                virtualCamera.Priority = 10; // Ensure this camera has the highest priority
+            }
+
+            // Assign the cameraTransform to this player's camera
+            cameraTransform = virtualCamera?.transform;
+        }
     }
 
     private void Update()
@@ -44,12 +76,17 @@ public class PlayerController : MonoBehaviour
         if (!photonView.IsMine) return;
 
         HandleCameraRotation();
+        RotateGunToCamera();
         HandleMovementInput();
         HandleJumpInput();
+        ItemSwitch();
+        UseItem();
     }
 
     private void FixedUpdate()
     {
+        if (!photonView.IsMine) return;
+
         PerformMovement();
     }
 
@@ -59,16 +96,37 @@ public class PlayerController : MonoBehaviour
 
     void HandleCameraRotation()
     {
-        float mouseX = Input.GetAxisRaw("Mouse X") * mouseSensitivity;
-        float mouseY = Input.GetAxisRaw("Mouse Y") * mouseSensitivity;
+        if (player == null || cameraTransform == null) return;
 
-        // Horizontal rotation
-        transform.Rotate(Vector3.up * mouseX);
+        // Get the camera's forward direction
+        Vector3 cameraForward = cameraTransform.forward;
 
-        // Vertical rotation with clamping
-        verticalLookRotation += mouseY;
-        verticalLookRotation = Mathf.Clamp(verticalLookRotation, -90f, 90f);
-        cameraHolder.transform.localEulerAngles = Vector3.left * verticalLookRotation;
+        // Flatten the camera forward vector on the horizontal plane (ignore Y-axis)
+        cameraForward.y = 0;
+        cameraForward.Normalize();
+
+        // If there's no significant forward vector, exit
+        if (cameraForward.magnitude < 0.01f) return;
+
+        // Calculate the target rotation for the player
+        Quaternion targetRotation = Quaternion.LookRotation(cameraForward);
+
+        // Smoothly interpolate the player's rotation towards the target rotation
+        player.rotation = Quaternion.Slerp(player.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+    }
+
+    void RotateGunToCamera()
+    {
+        if (gun == null || cameraTransform == null) return;
+
+        // Get the camera's pitch rotation (up/down)
+        Vector3 cameraForward = cameraTransform.forward;
+
+        // Calculate the gun's target rotation based on the camera's forward direction
+        Quaternion targetRotation = Quaternion.LookRotation(cameraForward);
+
+        // Apply the target rotation to the gun
+        gun.rotation = Quaternion.Slerp(gun.rotation, targetRotation, rotationSpeed * Time.deltaTime);
     }
 
     #endregion
@@ -109,15 +167,36 @@ public class PlayerController : MonoBehaviour
 
     #region Photon Methods
 
-    /// <summary>
-    /// Manages the setup for non-local players.
-    /// Destroys unnecessary components for better performance.
-    /// </summary>
     private void HandlePhotonView()
     {
-        if (!photonView.IsMine)
+        if (photonView.IsMine)
         {
-            Destroy(cameraHolder.GetComponentInChildren<Camera>().gameObject);
+            // Enable local player-specific components
+            EquipItem(0); // Equip default item
+
+            // Activate camera for the local player
+            if (cameraHolder != null)
+            {
+                CinemachineVirtualCamera virtualCamera = cameraHolder.GetComponentInChildren<CinemachineVirtualCamera>();
+                if (virtualCamera != null)
+                {
+                    virtualCamera.Priority = 10; // Higher priority for the local player
+                }
+            }
+        }
+        else
+        {
+            // Disable camera and input for remote players
+            if (cameraHolder != null)
+            {
+                CinemachineVirtualCamera virtualCamera = cameraHolder.GetComponentInChildren<CinemachineVirtualCamera>();
+                if (virtualCamera != null)
+                {
+                    virtualCamera.Priority = 0; // Lower priority for remote players
+                }
+            }
+
+            // Destroy unnecessary components for remote players
             Destroy(rb);
         }
     }
@@ -136,4 +215,91 @@ public class PlayerController : MonoBehaviour
 
     #endregion
 
+    #region Items Methods
+
+    private void EquipItem(int _index)
+    {
+        if (_index == previousItemIndex)
+        {
+            return;
+        }
+
+        itemIndex = _index;
+
+        items[itemIndex].itemGameObject.SetActive(true);
+
+        if (previousItemIndex != -1)
+        {
+            items[previousItemIndex].itemGameObject.SetActive(false);
+        }
+
+        previousItemIndex = itemIndex;
+
+        if (photonView.IsMine)
+        {
+            Hashtable hash = new Hashtable();
+            hash.Add("itemIndex", itemIndex);
+            PhotonNetwork.LocalPlayer.SetCustomProperties(hash);
+        }
+    }
+
+    public override void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps)
+    {
+        if (!photonView.IsMine && targetPlayer == photonView.Owner)
+        {
+            EquipItem((int)changedProps["itemIndex"]);
+        }
+    }
+
+    private void ItemSwitch()
+    {
+        for (int i = 0; i < items.Length; i++)
+        {
+            if (Input.GetKeyDown((i + 1).ToString()))
+            {
+                EquipItem(i);
+                break;
+            }
+        }
+    }
+
+    private void UseItem()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            items[itemIndex].Use();
+        }
+    }
+
+    #endregion
+
+    #region Health Methods
+
+    public void TakeDamage(float damage)
+    {
+        photonView.RPC("RPC_TakeDamage", RpcTarget.All, damage);
+    }
+
+    [PunRPC]
+    void RPC_TakeDamage(float damage)
+    {
+        if (!photonView.IsMine)
+        {
+            return;
+        }
+
+        currentHealth -= damage;
+
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
+    void Die()
+    {
+        playerManager.Die();
+    }
+
+    #endregion
 }

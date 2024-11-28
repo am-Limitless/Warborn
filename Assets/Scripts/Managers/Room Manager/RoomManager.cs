@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 public class RoomManager : MonoBehaviour
 {
+    #region Singleton Pattern
+
     public static RoomManager Instance;
 
     private void Awake()
@@ -18,16 +20,23 @@ public class RoomManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    #endregion
+
+    #region Unity Lifecycle Methods
+
     public void OnEnable()
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
-
     public void OnDisable()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
+
+    #endregion
+
+    #region Scene Management
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
     {
@@ -36,4 +45,6 @@ public class RoomManager : MonoBehaviour
             PhotonNetwork.Instantiate(Path.Combine("PhotonPrefabs", "PlayerManager"), Vector3.zero, Quaternion.identity);
         }
     }
+
+    #endregion
 }

@@ -7,16 +7,23 @@ public class PlayerListItem : MonoBehaviourPunCallbacks
 {
     #region Fields and References
 
+    [Header("UI Components")]
     [SerializeField] TMP_Text text;
     Player player;
 
     #endregion
+
+    #region Setup Methods
 
     public void SetUp(Player _player)
     {
         player = _player;
         text.text = _player.NickName;
     }
+
+    #endregion
+
+    #region Photon Callbacks
 
     public override void OnPlayerLeftRoom(Player otherPlayer)
     {
@@ -30,4 +37,6 @@ public class PlayerListItem : MonoBehaviourPunCallbacks
     {
         Destroy(gameObject);
     }
+
+    #endregion
 }

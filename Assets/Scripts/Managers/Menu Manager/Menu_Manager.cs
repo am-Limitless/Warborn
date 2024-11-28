@@ -2,15 +2,21 @@ using UnityEngine;
 
 public class Menu_Manager : MonoBehaviour
 {
-    public static Menu_Manager Instance; // Singleton instance for global access
+    #region Singleton Pattern
 
-    [Header("Array of Menus managed by the Menu_Manager")]
-    [SerializeField] Menu[] menus;
+    public static Menu_Manager Instance;
 
     private void Awake()
     {
         Instance = this;
     }
+
+    #endregion
+
+    #region Menu Management
+
+    [Header("Array of Menus managed by the Menu_Manager")]
+    [SerializeField] Menu[] menus;
 
     public void OpenMenu(string menuName)
     {
@@ -43,4 +49,6 @@ public class Menu_Manager : MonoBehaviour
     {
         menu.Close();
     }
+
+    #endregion
 }

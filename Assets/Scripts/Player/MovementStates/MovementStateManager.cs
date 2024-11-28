@@ -4,27 +4,38 @@ using UnityEngine.InputSystem;
 
 public class MovementStateManager : MonoBehaviour
 {
+    #region Fields and References
+
+    [Header("Movement Settings")]
     public float moveSpeed = 3f;
     [SerializeField] private float gravityValue = -9.81f;
-    [HideInInspector] public Vector3 dir;
-    CharacterController controller;
-    private PlayerInput playerInput;
-    private bool isGrounded;
-    private Vector3 playerVelocity;
-    private Transform cameraTransform;
     [SerializeField] float roataionSpeed = 5f;
 
-    private InputAction moveAction;
-    private InputAction jumpAction;
-
-    MovementBaseState currentState;
-
+    [Header("State Machine")]
     public IdleState Idle = new IdleState();
     public WalkState Walk = new WalkState();
     public CrounchState Crounch = new CrounchState();
     public RunState Run = new RunState();
+    private MovementBaseState currentState;
 
+    [Header("Input and Animation")]
+    private PlayerInput playerInput;
+    private InputAction moveAction;
+    private InputAction jumpAction;
+    [HideInInspector] public Vector3 dir;
     [HideInInspector] public Animator animator;
+
+    [Header("References")]
+    CharacterController controller;
+    private Transform cameraTransform;
+
+    // Physics and Ground Check
+    private bool isGrounded;
+    private Vector3 playerVelocity;
+
+    #endregion
+
+    #region Unity Lifecycle Methods
 
     private void Start()
     {
@@ -49,12 +60,19 @@ public class MovementStateManager : MonoBehaviour
         currentState.UpdateState(this);
     }
 
+    #endregion
+
+    #region State Management
+
     public void SwicthState(MovementBaseState state)
     {
         currentState = state;
         currentState.EnterState(this);
     }
 
+    #endregion
+
+    #region Movement Logic
 
     public void GetDirectionAndMove()
     {
@@ -75,6 +93,10 @@ public class MovementStateManager : MonoBehaviour
         Quaternion targetRotation = Quaternion.Euler(0, cameraTransform.eulerAngles.y, 0);
         transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, roataionSpeed * Time.deltaTime);
     }
+
+    #endregion
+
+    #region Gravity and Ground Check
 
     private bool CheckGroundStatus()
     {
@@ -102,4 +124,6 @@ public class MovementStateManager : MonoBehaviour
         }
         controller.Move(playerVelocity * Time.deltaTime);
     }
+
+    #endregion
 }

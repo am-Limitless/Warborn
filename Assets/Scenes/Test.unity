@@ -206,8 +206,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 382302902}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.01719069, y: 0, z: 0, w: 0.99985224}
-  m_LocalPosition: {x: 2.15813, y: 4.3331633, z: -8.547104}
+  m_LocalRotation: {x: 0.004799637, y: 0, z: 0, w: 0.9999885}
+  m_LocalPosition: {x: 2.096844, y: 3.6134944, z: -8.527639}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1430,8 +1430,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 3
   gravityValue: -9.81
-  dir: {x: 0, y: 0, z: 0}
   roataionSpeed: 0.8
+  dir: {x: 0, y: 0, z: 0}
   animator: {fileID: 0}
 --- !u!137 &1837112519254003599
 SkinnedMeshRenderer:

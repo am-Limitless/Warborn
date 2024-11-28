@@ -4,16 +4,23 @@ using UnityEngine.InputSystem;
 
 public class SwitchVirtualCam : MonoBehaviour
 {
+    #region Fields and References
+
+    [Header("Player Input and Actions")]
     [SerializeField] private PlayerInput playerInput;
-
-    private CinemachineVirtualCamera virtualCamera;
-
-    private int priorityBoostAmount = 10;
-
     private InputAction aimAction;
 
+    [Header("Cinemachine Camera Settings")]
+    private CinemachineVirtualCamera virtualCamera;
+    private int priorityBoostAmount = 10;
+
+    [Header("UI Canvases")]
     [SerializeField] Canvas thirdPersonCanvas;
     [SerializeField] Canvas aimCanvas;
+
+    #endregion
+
+    #region Unity Lifecycle Methods
 
     private void Awake()
     {
@@ -34,6 +41,10 @@ public class SwitchVirtualCam : MonoBehaviour
         aimAction.canceled -= _ => CancelAim();
     }
 
+    #endregion
+
+    #region Aim Handling Methods
+
     private void StartAim()
     {
         virtualCamera.Priority += priorityBoostAmount;
@@ -47,6 +58,8 @@ public class SwitchVirtualCam : MonoBehaviour
         aimCanvas.enabled = false;
         thirdPersonCanvas.enabled = true;
     }
+
+    #endregion
 }
 
 

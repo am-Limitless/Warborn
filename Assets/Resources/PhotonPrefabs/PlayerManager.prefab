@@ -67,5 +67,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa6fc0f663198e24c9145c618bbd961b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnRangeMin: {x: -10, y: 0, z: -10}
-  spawnRangeMax: {x: 10, y: 0, z: 10}

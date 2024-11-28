@@ -2,9 +2,15 @@ using UnityEngine;
 
 public class Menu : MonoBehaviour
 {
+    #region Variables
+
     [Header("Menu Settings")]
-    public string menuName; // Name of the menu
-    public bool open; // Status to track if the menu is open or closed
+    public string menuName;
+    public bool open;
+
+    #endregion
+
+    #region Menu Control Methods
 
     public void Open()
     {
@@ -17,4 +23,6 @@ public class Menu : MonoBehaviour
         open = false;
         gameObject.SetActive(false);
     }
+
+    #endregion
 }
