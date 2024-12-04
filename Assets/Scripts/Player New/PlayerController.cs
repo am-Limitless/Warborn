@@ -1,7 +1,7 @@
-using Cinemachine;
 using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
+using UnityEngine.UI;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
 
 public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
@@ -35,8 +35,11 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
     private Rigidbody rb;
     private new PhotonView photonView;
 
+    [Header("Health Setttings")]
     const float maxHealth = 100f;
     float currentHealth = maxHealth;
+    [SerializeField] Image healthbarImage;
+    [SerializeField] GameObject ui;
 
     PlayerManager playerManager;
 
@@ -47,6 +50,7 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+
         photonView = GetComponent<PhotonView>();
 
         playerManager = PhotonView.Find((int)photonView.InstantiationData[0]).GetComponent<PlayerManager>();
@@ -60,20 +64,24 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
         if (photonView.IsMine && cameraHolder != null)
         {
             // Find the Cinemachine camera under this player's cameraHolder
-            CinemachineVirtualCamera virtualCamera = cameraHolder.GetComponentInChildren<CinemachineVirtualCamera>();
-            if (virtualCamera != null)
-            {
-                virtualCamera.Priority = 10; // Ensure this camera has the highest priority
-            }
+            //CinemachineVirtualCamera virtualCamera = cameraHolder.GetComponentInChildren<CinemachineVirtualCamera>();
+            //if (virtualCamera != null)
+            //{
+            //    virtualCamera.Priority = 10; // Ensure this camera has the highest priority
+            //    //virtualCamera.enabled = true;
+            //}
 
             // Assign the cameraTransform to this player's camera
-            cameraTransform = virtualCamera?.transform;
+            //cameraTransform = virtualCamera?.transform;
         }
     }
 
     private void Update()
     {
-        if (!photonView.IsMine) return;
+        if (!photonView.IsMine)
+        {
+            return;
+        }
 
         HandleCameraRotation();
         RotateGunToCamera();
@@ -81,11 +89,15 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
         HandleJumpInput();
         ItemSwitch();
         UseItem();
+        CheckFall();
     }
 
     private void FixedUpdate()
     {
-        if (!photonView.IsMine) return;
+        if (!photonView.IsMine)
+        {
+            return;
+        }
 
         PerformMovement();
     }
@@ -98,20 +110,16 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
     {
         if (player == null || cameraTransform == null) return;
 
-        // Get the camera's forward direction
+
         Vector3 cameraForward = cameraTransform.forward;
 
-        // Flatten the camera forward vector on the horizontal plane (ignore Y-axis)
         cameraForward.y = 0;
         cameraForward.Normalize();
 
-        // If there's no significant forward vector, exit
         if (cameraForward.magnitude < 0.01f) return;
 
-        // Calculate the target rotation for the player
         Quaternion targetRotation = Quaternion.LookRotation(cameraForward);
 
-        // Smoothly interpolate the player's rotation towards the target rotation
         player.rotation = Quaternion.Slerp(player.rotation, targetRotation, rotationSpeed * Time.deltaTime);
     }
 
@@ -133,9 +141,6 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
 
     #region Movement Methods
 
-    /// <summary>
-    /// Handles player movement based on input.
-    /// </summary>
     void HandleMovementInput()
     {
         Vector3 inputDirection = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical")).normalized;
@@ -144,9 +149,6 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
         movementAmount = Vector3.SmoothDamp(movementAmount, inputDirection * targetSpeed, ref currentMovementVelocity, movementSmoothingTime);
     }
 
-    /// <summary>
-    /// Handles the jump action when the player is grounded.
-    /// </summary>
     void HandleJumpInput()
     {
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
@@ -155,9 +157,6 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
         }
     }
 
-    /// <summary>
-    /// Moves the player rigidbody in the fixed update.
-    /// </summary>
     private void PerformMovement()
     {
         rb.MovePosition(rb.position + transform.TransformDirection(movementAmount) * Time.fixedDeltaTime);
@@ -171,34 +170,26 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
     {
         if (photonView.IsMine)
         {
-            // Enable local player-specific components
-            EquipItem(0); // Equip default item
-
-            // Activate camera for the local player
-            if (cameraHolder != null)
-            {
-                CinemachineVirtualCamera virtualCamera = cameraHolder.GetComponentInChildren<CinemachineVirtualCamera>();
-                if (virtualCamera != null)
-                {
-                    virtualCamera.Priority = 10; // Higher priority for the local player
-                }
-            }
+            //CinemachineVirtualCamera virtualCamera = cameraHolder.GetComponentInChildren<CinemachineVirtualCamera>();
+            //if (virtualCamera != null)
+            //{
+            //    virtualCamera.Priority = 10; // Active for local player
+            //    //virtualCamera.enabled = true;
+            //}
         }
         else
         {
-            // Disable camera and input for remote players
-            if (cameraHolder != null)
-            {
-                CinemachineVirtualCamera virtualCamera = cameraHolder.GetComponentInChildren<CinemachineVirtualCamera>();
-                if (virtualCamera != null)
-                {
-                    virtualCamera.Priority = 0; // Lower priority for remote players
-                }
-            }
-
-            // Destroy unnecessary components for remote players
-            Destroy(rb);
+            //CinemachineVirtualCamera virtualCamera = cameraHolder.GetComponentInChildren<CinemachineVirtualCamera>();
+            //if (virtualCamera != null)
+            //{
+            //    virtualCamera.Priority = 0; // Deactivate for remote players
+            //    //virtualCamera.enabled = false;
+            //}
+            Destroy(rb); // Prevent remote players from using Rigidbody
+            Destroy(ui);
         }
+
+
     }
 
     #endregion
@@ -290,12 +281,21 @@ public class PlayerController : MonoBehaviourPunCallbacks, IDamageable
 
         currentHealth -= damage;
 
+        healthbarImage.fillAmount = currentHealth / maxHealth;
+
         if (currentHealth <= 0)
         {
             Die();
         }
     }
 
+    private void CheckFall()
+    {
+        if (transform.position.y < -10f)
+        {
+            Die();
+        }
+    }
     void Die()
     {
         playerManager.Die();

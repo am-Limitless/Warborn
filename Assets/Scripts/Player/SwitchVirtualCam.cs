@@ -1,4 +1,3 @@
-using Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -11,7 +10,7 @@ public class SwitchVirtualCam : MonoBehaviour
     private InputAction aimAction;
 
     [Header("Cinemachine Camera Settings")]
-    private CinemachineVirtualCamera virtualCamera;
+    //private CinemachineVirtualCamera virtualCamera;
     private int priorityBoostAmount = 10;
 
     [Header("UI Canvases")]
@@ -24,7 +23,7 @@ public class SwitchVirtualCam : MonoBehaviour
 
     private void Awake()
     {
-        virtualCamera = GetComponent<CinemachineVirtualCamera>();
+        //virtualCamera = GetComponent<CinemachineVirtualCamera>();
         aimAction = playerInput.actions["Aim"];
         aimCanvas.enabled = false;
     }
@@ -47,14 +46,14 @@ public class SwitchVirtualCam : MonoBehaviour
 
     private void StartAim()
     {
-        virtualCamera.Priority += priorityBoostAmount;
+        //virtualCamera.Priority += priorityBoostAmount;
         aimCanvas.enabled = true;
         thirdPersonCanvas.enabled = false;
     }
 
     private void CancelAim()
     {
-        virtualCamera.Priority -= priorityBoostAmount;
+        //virtualCamera.Priority -= priorityBoostAmount;
         aimCanvas.enabled = false;
         thirdPersonCanvas.enabled = true;
     }
